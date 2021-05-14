@@ -1,2 +1,7 @@
 # tetris-puzzle
-HTML5 Tetris Puzzle Game
+2021-05-14 군대에서 만듬
+테트리스 퍼즐게임
+
+## 개발자
+- 강우성(후임)
+- 정예준(선임)

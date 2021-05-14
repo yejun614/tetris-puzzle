@@ -1,0 +1,33 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: slategray;
+}
+
+#logo {
+  color: white;
+  font-size: 15px;
+  font-weight: bold;
+  text-decoration: blink;
+  text-transform: uppercase;
+  padding: 5px 15px;
+  border-radius: 5px;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+}
+
+#logo:hover {
+  background: rgba(0, 0, 0, .3);
+}
+
+#game {
+  border: 2px solid black;
+}
