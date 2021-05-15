@@ -78,11 +78,11 @@ class Blocks {
     })
   }
 
-  get columns() {
+  get columns () {
     return this.shape[0].length
   }
 
-  get rows() {
+  get rows () {
     return this.shape.length
   }
 }
