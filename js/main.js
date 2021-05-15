@@ -16,36 +16,74 @@ class Blocks {
     this.tileHeight = tileHeight
   }
 
+  forEach(callback) {
+    // 블록 형태(this.shape)를 차례대로 가져온다.
+    this.shape.forEach((arr, y) => {
+      arr.forEach((value, x) => {
+        // 콜백 함수 호출
+        callback(value, x, y)
+      })
+    })
+  }
+
+  drawBlock (ctx, color, x, y, line=false) {
+    // 색상이 없이 비워있는 공간은 그리지 않는다.
+    if (color == 0) {
+      return
+    }
+
+    // 선만 그리는 경우 (line=true)
+    // 사각형은 그리지 않는다.
+    if (!line) {
+      // 배경색을 설정
+      ctx.fillStyle = blockRectColors[color]
+      // canvas에 그린다.
+      ctx.fillRect(x, y, this.tileWidth, this.tileHeight)
+    }
+
+    // 바깥선 색을 설정
+    ctx.strokeStyle = blockLineColors[color]
+    // cavnas에 바깥선을 그린다.
+    ctx.strokeRect(x, y, this.tileWidth, this.tileHeight)
+
+  }
+
   // 블록을 canvas 화면 상대위치에 그려주는 함수
   // ctx : Canvas 2D Context
   // xpos : Block X Position
   // ypos : Block Y Position
-  draw (ctx, xpos, ypos, background=false) {
+  draw (ctx, xpos, ypos, line=false) {
     // 블록 2차원 배열을 차례대로 가져와서
-    // Canvas에 그린다.
-    this.shape.forEach((arr, y) => {
-      // 블록(shape)의 (x, y)에 위치한 값을 가져온다.
-      arr.forEach((value, x) => {
-        if (!background && value == 0) {
-          return
-        }
+    this.forEach((value, x, y) => {
+      // 블록이 그려질 X 위치를 계산
+      const X = (xpos+x) * this.tileWidth
+      // 블록이 그려질 Y 위치를 계산
+      const Y = (ypos+y) * this.tileHeight
 
-        // 배경색을 설정
-        ctx.fillStyle = blockRectColors[value]
-        // 바깥선 색을 설정
-        ctx.strokeStyle = blockLineColors[value]
-
-        // 블록이 그려질 X 위치를 계산
-        const X = (xpos+x) * this.tileWidth
-        // 블록이 그려질 Y 위치를 계산
-        const Y = (ypos+y) * this.tileHeight
-
-        // canvas에 그린다.
-        ctx.fillRect(X, Y, this.tileWidth, this.tileHeight)
-        // cavnas에 바깥선을 그린다.
-        ctx.strokeRect(X, Y, this.tileWidth, this.tileHeight)
-      })
+      // Canvas에 그린다.
+      this.drawBlock(ctx, value, X, Y, line);
     })
+  }
+
+  // 블록은 canvas 화면 절대위치에 그려주는 함수
+  drawPos (ctx, xpos, ypos, line=false) {
+    // 블록 2차원 배열을 차례대로 가져와서
+    this.forEach((value, x, y) => {
+      // 블록이 그려질 위치를 계산
+      const X = xpos + (x*this.tileWidth)
+      const Y = ypos + (y*this.tileHeight)
+
+      // Canvas에 그린다.
+      this.drawBlock(ctx, value, X, Y, line)
+    })
+  }
+
+  get columns() {
+    return this.shape[0].length
+  }
+
+  get rows() {
+    return this.shape.length
   }
 }
 
@@ -76,12 +114,11 @@ class TetrisPuzzleGame {
     this.canvas.width = this.boardWidth * this.tileWidth + 300
     this.canvas.height = this.boardHeight * this.tileHeight
 
-    // board 변수 만들기
+    // board 모양을 배열로 표현
     // 이중 배열 (height x width)
-    this.boardShape = [...Array(this.boardHeight)].map(x=>Array(this.boardWidth).fill(0))
-    
-    // 다음 블록 변수
-    this.nextBlockShape = undefined
+    const boardShape = [...Array(this.boardHeight)].map(x=>Array(this.boardWidth).fill(9))
+    // board 객체 생성하기
+    this.board = new Blocks(boardShape, this.tileWidth, this.tileHeight)
   }
 
   // 게임 시작 함수
@@ -135,7 +172,7 @@ class TetrisPuzzleGame {
   drawGameBoard () {
     // boardShape 를 Blocks 인스턴스에 넣어서
     // Blocks.draw 함수를 호출해서 canvas 에 게임 보드를 그린다.
-    new Blocks(this.boardShape, this.tileWidth, this.tileHeight).draw(this.context, 0, 0, true)
+    this.board.draw(this.context, 0, 0, true)
   }
 
   drawNextBlock () {
