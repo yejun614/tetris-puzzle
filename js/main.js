@@ -179,19 +179,34 @@ class TetrisPuzzleGame {
     // Canvas 2D Context 가져오기
     const ctx = this.context
 
+    // 배경이 그려질 위치를 계산
+    const X = this.tileWidth * this.boardWidth + 50
+    const Y = 30
+    // 배경의 크기를 설정
+    const width = 200
+    const height = 200
+
     // 배경 그리기
     ctx.fillStyle = '#aaa'
-    ctx.fillRect(this.tileWidth * this.boardWidth + 50, 30, 200, 200)
+    ctx.fillRect(X, Y, width, height)
+
+    // 블록이 그려질 위치를 계산
+    const blockWidth = this.nextBlock.columns * this.nextBlock.tileWidth
+    const blockHeight = this.nextBlock.rows * this.nextBlock.tileHeight
+    // 배경의 중앙에 배치될수 있도록 계산
+    const blockX = X + (width-blockWidth)/2
+    const blockY = Y + (height-blockHeight)/2
 
     // 다음 블록 그리기
-    const X = this.boardWidth + 1
-    const Y = 1
-    new Blocks(this.nextBlockShape, this.tileWidth, this.tileHeight).draw(ctx, X, Y)
+    this.nextBlock.drawPos(ctx, blockX, blockY)
   }
 
   // 다음 블록 선택하기
   selectNextBlock () {
-    this.nextBlockShape = getRandomShape()
+    // 랜덤으로 블록 모양 선택하기
+    const blockShape = getRandomShape()
+    // 블록 인스턴스 생성
+    this.nextBlock = new Blocks(blockShape, this.tileWidth, this.tileHeight)
   }
 }
 
