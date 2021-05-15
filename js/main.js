@@ -128,13 +128,13 @@ class TetrisPuzzleGame {
 
     // 게임 애니메이션 관리 변수 만들기
     this.timestamp = -1
-    this.animationFrame = window.requestAnimationFrame((frame) => this.update(frame))
+    this.animationController = window.requestAnimationFrame((frame) => this.update(frame))
   }
 
   // 게임 정지 함수
   stop() {
     // 게임 애니메이션 취소 (정지)
-    window.cancelAnimationFrame(this.animationFrame)
+    window.cancelAnimationFrame(this.animationController)
   }
 
   // 게임 업데이트 함수
