@@ -384,9 +384,7 @@ class TetrisPuzzleGame {
 const init = () => {
   // game : 게임 인스턴스
   // canvas ID Game => #game
-  const game = new TetrisPuzzleGame('#game', 30, 30)
-  game.tileWidth = 15
-  game.tileHeight = 15
+  const game = new TetrisPuzzleGame('#game', 9, 9)
 
   game.init()
   game.start()
