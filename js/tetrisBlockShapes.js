@@ -14,7 +14,8 @@ const blockRectColors = {
   5: '#30cf6c',
   6: '#ba34e3',
   7: '#ed2311',
-  9: '#d1d1d1'
+  9: '#d1d1d1',
+  10: '#ffffff',
 }
 
 const blockLineColors = {
@@ -25,7 +26,8 @@ const blockLineColors = {
   5: '#208532',
   6: '#561869',
   7: '#7a140b',
-  9: '#787878'
+  9: '#787878',
+  10: '#ffffff'
 }
 
 const blockShapeItems = [

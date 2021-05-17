@@ -1,228 +1,3 @@
-
-/**
- * Blocks 클래스
- * 블럭 모양을 저장하고 그리는 인스턴스
- */
-class Blocks {
-  // 생성자
-  // shape : 이차원 배열로 블럭의 모양을 의미
-  constructor (shape, tileWidth, tileHeight) {
-    // 블록의 모양
-    this.shape = shape
-
-    // 한 칸의 넓이
-    this.tileWidth = tileWidth
-    // 한 칸의 높이
-    this.tileHeight = tileHeight
-  }
-
-  forEach(callback) {
-    // 블록 형태(this.shape)를 차례대로 가져온다.
-    this.shape.forEach((arr, y) => {
-      arr.forEach((value, x) => {
-        // 콜백 함수 호출
-        callback(value, x, y)
-      })
-    })
-  }
-
-  drawBlock (ctx, color, x, y, line=false) {
-    // 색상이 없이 비워있는 공간은 그리지 않는다.
-    if (color == 0) {
-      return
-    }
-
-    // 선만 그리는 경우 (line=true)
-    // 사각형은 그리지 않는다.
-    if (!line) {
-      // 배경색을 설정
-      ctx.fillStyle = blockRectColors[color]
-      // canvas에 그린다.
-      ctx.fillRect(x, y, this.tileWidth, this.tileHeight)
-    }
-
-    // 바깥선 색을 설정
-    ctx.strokeStyle = blockLineColors[color]
-    // cavnas에 바깥선을 그린다.
-    ctx.strokeRect(x, y, this.tileWidth, this.tileHeight)
-
-  }
-
-  // 블록을 canvas 화면 상대위치에 그려주는 함수
-  // ctx : Canvas 2D Context
-  // xpos : Block X Position
-  // ypos : Block Y Position
-  draw (ctx, xpos, ypos, line=false) {
-    // 블록 2차원 배열을 차례대로 가져와서
-    this.forEach((value, x, y) => {
-      // 블록이 그려질 X 위치를 계산
-      const X = (xpos+x) * this.tileWidth
-      // 블록이 그려질 Y 위치를 계산
-      const Y = (ypos+y) * this.tileHeight
-
-      // Canvas에 그린다.
-      this.drawBlock(ctx, value, X, Y, line);
-    })
-  }
-
-  // 블록은 canvas 화면 절대위치에 그려주는 함수
-  drawPos (ctx, xpos, ypos, line=false) {
-    // 블록 2차원 배열을 차례대로 가져와서
-    this.forEach((value, x, y) => {
-      // 블록이 그려질 위치를 계산
-      const X = xpos + (x*this.tileWidth)
-      const Y = ypos + (y*this.tileHeight)
-
-      // Canvas에 그린다.
-      this.drawBlock(ctx, value, X, Y, line)
-    })
-  }
-
-  // 서로 다른 블록들이 충돌하는지 판단해서
-  // 충돌한 칸의 위치과 값을 콜백함수 매개변수로 넣어서 호출한다.
-  collisionWithBlocks (dragBlock, callback) {
-    // 꼭짓점을 저장할 배열
-    let edges = []
-
-    // 목표 블록의 각 꼭짓점을 배열로 만든다.
-    for (let by=0; by<this.rows; by++) {
-      for (let bx=0; bx<this.columns; bx++) {
-        // 한 칸의 넓이와 높이를 가져온다.
-        const tW = dragBlock.tileWidth
-        const tH = dragBlock.tileHeight
-
-        // 좌표를 추가
-        edges.push([ x*tW, y*tH ], [ x*tW, y*tH+tH ])
-
-        // 마지막 블록의 꼭짓점을 추가
-        if (x == dragBlock.columns) {
-          edges.push([ x*tW+tW, y*tH ], [ x*tW+tW, y*tH+tH ])
-        }
-      }
-    }
-
-    // 목표 블록의 기준 좌표를 가져온다.
-    const xpos = dragBlock.x
-    const ypos = dragBlock.y
-
-    edges.forEach((pos) => {
-      if (this.collision(xpos+pos[0], ypos+pos[1])) {
-        // TODO: 블록의 위치가 필요함.
-        callback()
-      }
-    })
-  }
-
-  // (x, y)좌표가 블록 내부에 있는지 여부를 판단한다.
-  collision (x, y) {
-    for (let by=0; by<this.rows; by++) {
-      for (let bx=0; bx<this.columns; bx++) {
-        // 비워있는 공간은 제외
-        if (this.shape[by][bx] == 0) {
-          continue
-        }
-
-        // 좌표를 계산
-        const sx = this.x + (bx*this.tileWidth)
-        const sy = this.y + (by*this.tileHeight)
-
-        // 좌표를 확인
-        if (x >= sx && x <= sx+this.tileWidth && 
-            y >= sy && y <= sy+this.tileHeight) {
-
-              return true
-            }
-      }
-    }
-
-    return false;
-  }
-
-  get columns () {
-    return this.shape[0].length
-  }
-
-  get rows () {
-    return this.shape.length
-  }
-}
-
-
-/**
- * DrawBlocks 클래스
- * 드래그 가능한 블록을 생성하는 인스턴스
- */
-class DragBlocks extends Blocks {
-  constructor (xpos, ypos, shape, tileWidth, tileHeight) {
-    // Blocks 인스턴스에 기본정보 제공
-    super(shape, tileWidth, tileHeight)
-
-    // 블록의 기본위치 설정
-    this.x = xpos
-    this.y = ypos
-
-    // 마우스 이벤트 활성화 여부를 저장
-    this.isMouse = false
-
-    // 초기화
-    this.reset()
-  }
-
-  // 마우스 변수를 초기화
-  reset () {
-    // 다음 블록이 드래그 중일때 위치를 저장
-    this.mouseX = 0
-    this.mosueY = 0
-
-    // 마우스가 블록 내부중 어느좌표를 클릭하고 있는지 저장
-    this.centerX = 0
-    this.centerY = 0
-  }
-  
-  // 마우스가 클릭된 시점에서 좌표를 저장
-  down (x, y, isCollision=false) {
-    // 블록 내부를 클릭했는지 판단한다.
-    if (isCollision && !this.collision(x, y)) {
-      // 마우스 위치가 블록 외부에 위치한다.
-      return false
-    }
-
-    this.mouseX = x
-    this.mouseY = y
-
-    this.centerX = this.mouseX - this.x
-    this.centerY = this.mouseY - this.y
-
-    return true
-  }
-
-  // 마우스가 이동한 좌표를 저장
-  move (x, y) {
-    this.mouseX = x
-    this.mouseY = y
-  }
-
-  // 마우스가 블록 어느 부분을 클릭했는지 계산해서
-  // 자연스러운 드래그를 만드는 함수
-  drawMousePos (ctx, line=false) {
-    // 블록의 위치를 계산
-    const X = this.mouseX - this.centerX
-    const Y = this.mouseY - this.centerY
-
-    // 블록을 그린다.
-    this.drawPos(ctx, X, Y, line)
-  }
-
-  // 블록을 기본위치에 그리는 함수
-  drawDefaultPos (ctx, line=false) {
-    // 변수를 초기화
-    this.reset()
-
-    // 블록을 그린다.
-    this.drawPos(ctx, this.x, this.y, line)
-  }
-}
-
 /**
  * TetrisPuzzleGame 클래스
  * 게임이 실제로 시작되는 인스턴스로 게임 화면을 구성하고
@@ -244,24 +19,34 @@ class TetrisPuzzleGame {
     // 한 칸의 크기
     this.tileWidth = 50
     this.tileHeight = 50
+  }
 
+  // 게임 초기설정 함수
+  init () {
     // canvas 크기 조절
     // 가로에 여유공간을 추가 (점수가 들어갈 공간) = 300
     this.canvas.width = this.boardWidth * this.tileWidth + 300
     this.canvas.height = this.boardHeight * this.tileHeight
 
     // board 모양을 배열로 표현
-    // 이중 배열 (height x width)
-    const boardShape = [...Array(this.boardHeight)].map(x=>Array(this.boardWidth).fill(9))
     // board 객체 생성하기
+    const boardShape = [...Array(this.boardHeight)].map(x=>Array(this.boardWidth).fill(9))
     this.board = new Blocks(boardShape, this.tileWidth, this.tileHeight)
+
+    // 임시표시 영역 생성하기
+    const shadowBoardShape = [...Array(this.boardHeight)].map(x=>Array(this.boardWidth).fill(9))
+    this.shadowBoard = new Blocks(shadowBoardShape, this.tileWidth, this.tileHeight)
 
     // 다음 블록 배경이 그려질 위치를 계산
     this.nextBlockBgX = this.tileWidth * this.boardWidth + 50
     this.nextBlockBgY = 30
+
     // 배경의 크기를 설정
     this.nextBlockBgWidth = 200
     this.nextBlockBgHeight = 200
+
+    // 게임 점수
+    this.scores = 0
   }
 
   // 게임 시작 함수
@@ -297,12 +82,24 @@ class TetrisPuzzleGame {
     this.timestamp = frame
     }
 
+    // 조건에 부합하는 블록을 제거하고
+    // 점수를 가산한다
+    const score = this.removeCheckedBlocks()
+    this.scores = score
+
+    // 게임 화면 그리기
+
     // 게임 화면을 전부 지운다. (깨끗하게)
     this.clearScreen()
 
-    // 게임 화면 그리기
+    // 임시 영역 계산하기
+    if (this.isMouse) {
+      this.setShadowBoard()
+    }
+
     // 보드 그리기
     this.drawGameBoard()
+    
     // 다음 블록 그리기
     this.drawNextBlock()
 
@@ -321,18 +118,122 @@ class TetrisPuzzleGame {
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
   }
 
+  removeCheckedBlocks () {
+    // 점수를 저장하는 변수
+    let scores = 0
+
+    // 게임보드의 가로, 세로 크기
+    const width = this.boardWidth
+    const height = this.boardHeight
+
+    // 가로 확인
+    for (let y=0; y<height; y++) {
+      let sum = 0
+      for (let x=0; x<width; x++) {
+        if (this.board.shape[y][x] != 9) {
+          sum ++;
+        }
+      }
+
+      // 가로 한 줄에 블록이 맞춰진 경우
+      if (sum == width) {
+        // 가로 칸의 개수만큼 점수를 가산
+        scores += width
+
+        for (let x=0; x<width; x++) {
+          // 게임보드에서 블록을 지운다.
+          this.board.shape[y][x] = 9
+          // 임시영역에서 블록을 초기화 한다.
+          this.shadowBoard.shape[y][x] = 9
+        }
+      }
+    }
+
+    // 세로 확인
+    for (let x=0; x<width; x++) {
+      let sum = 0
+      for (let y=0; y<height; y++) {
+        if (this.board.shape[y][x] != 9) {
+          sum ++
+        }
+      }
+
+      // 세로 한 줄에 블록이 맞춰진 경우
+      if (sum == height) {
+        // 세로칸의 개수 만큼 점수를 가산
+        scores += height
+
+        for (let y=0; y<height; y++) {
+          // 게임보드에서 블록을 지운다.
+          this.board.shape[y][x] = 9
+          // 임시영역에서 블록을 초기화 한다.
+          this.shadowBoard.shape[y][x] = 9
+        }
+      }
+    }
+
+    // 9x9 사각형 확인
+
+    return scores
+  }
+
+  setShadowBoard () {
+    // 다음 블록이 드래그 중일때 게임보드 위에 배치될 위치를 보여준다.
+    // 다음 블록의 현재 위치를 계산
+    const blockX = this.nextBlock.mouseX - this.nextBlock.centerX
+    const blockY = this.nextBlock.mouseY - this.nextBlock.centerY
+
+    // 다음 블록의 한 칸의 크기를 가져온다
+    const tileWidth = this.nextBlock.tileWidth
+    const tileHeight = this.nextBlock.tileHeight
+
+    // 첫번째 칸의 위치를 저장한다
+    this.shadowBlockX = Math.floor((blockX + (tileWidth/2)) / this.tileWidth)
+    this.shadowBlockY = Math.floor((blockY + (tileHeight/2)) / this.tileHeight)
+
+    this.nextBlock.forEach((value, x, y) => {
+      // 현재 칸(x, y)이 비워져 있는 경우 무시한다
+      if (value == 0) {
+        return
+      }
+
+      // 현재 칸의 절대위치를 계산
+      const tileX = blockX + (x*tileWidth) + (tileWidth/2)
+      const tileY = blockY + (y*tileHeight) + (tileHeight/2)
+
+      // 현재 칸이 게임 보드위에 어디있는지 계산
+      const boardX = Math.floor(tileX/this.tileWidth)
+      const boardY = Math.floor(tileY/this.tileHeight)
+
+      // 보드 영역안에 들어가는지 확인한다
+      if (boardX >= 0 && boardX < this.boardWidth &&
+          boardY >= 0 && boardY < this.boardHeight) {
+
+        // 임시 영역 위에 다른 블록이 그려져 있는 경우
+        // 임시 영역을 그리지 않는다
+        if (this.shadowBoard.shape[boardY][boardX] == 0) {
+          return
+        }
+
+        // 임시 영역을 그린다
+        this.shadowBoard.shape[boardY][boardX] = value
+      }
+    })
+  }
+
   // 게임 보드 그리기
   drawGameBoard () {
     // Blocks.draw 함수를 호출해서 canvas에 게임 보드를 그린다.
-    this.board.draw(this.context, 0, 0, true)
+    this.board.draw(this.context, 0, 0)
 
-    if (this.isMouse) {
-      // 다음 블록이 드래그 중일때 게임보드 위에 배치될 위치를 보여준다.
-      const mouseX = this.nextBlock.mouseX
-      const mouseY = this.nextBlock.mouseY
+    // 영역을 표시한다.
+    this.shadowBoard.draw(this.context, 0, 0, false, 0.5)
 
-      // 
-    }
+
+    // 임시로 표시해둔 영역을 지운다
+    this.shadowBoard.forEach((value, x, y) => {
+      this.shadowBoard.shape[y][x] = 9
+    }, true)
   }
 
   drawNextBlock () {
@@ -340,6 +241,7 @@ class TetrisPuzzleGame {
     const ctx = this.context
     
     // 배경 그리기
+    ctx.globalAlpha = 1
     ctx.fillStyle = '#aaa'
     ctx.fillRect(this.nextBlockBgX, this.nextBlockBgY, this.nextBlockBgWidth, this.nextBlockBgHeight)
 
@@ -372,6 +274,63 @@ class TetrisPuzzleGame {
 
     // 블록 인스턴스 생성
     this.nextBlock = new DragBlocks(blockX, blockY, blockShape, this.tileWidth, this.tileHeight)
+
+    // 랜덤으로 회전 시킨다.
+    const count = Math.floor(Math.random() * 4)
+
+    for (let i=0; i<count; i++) {
+      this.nextBlock.rotate()
+    }
+  }
+
+
+  // 블록이 다른 블록과 겹치지 않는지
+  // 혹은 범위를 벗어나지 않는지 여부를 반환
+  checkBlock(block, xpos, ypos) {
+    let flag = true
+
+    block.forEach((value, x, y) => {
+      // 비워있는 칸은 무시한다
+      if (value == 0) {
+        return
+      }
+
+      if (ypos+y < 0 || ypos+y > this.boardHeight-1 ||
+          xpos+x < 0 || xpos+x > this.boardWidth-1) {
+        
+        // 범위를 확인
+        flag = false
+    
+      } else if (this.board.shape[ypos+y][xpos+x] != 9) {
+      // 다른 블록과의 충돌을 확인
+      flag = false
+      }
+    })
+
+    return flag
+  }
+
+  // 블록을 추가한다.
+  addBlock (block, xpos, ypos) {
+    // 목표 블록을 순회
+    for (let y=0; y<block.shape.length; y++) {
+      const columns = block.shape[y]
+
+      for (let x=0; x<columns.length; x++) {
+        const value = columns[x]
+
+        // 비워있는 칸은 무시한다
+        if (value == 0) {
+          continue
+        }
+
+        // 블록을 게임보드 위에 추가
+        this.board.shape[ypos+y][xpos+x] = value
+
+        // 임시 영역 삭제
+        this.shadowBoard.shape[ypos+y][xpos+x] = 0
+      }
+    }
   }
 
   // 마우스이벤트 1: 마우스가 canvas에 클릭된 상황
@@ -385,14 +344,37 @@ class TetrisPuzzleGame {
 
   // 마우스이벤트 2: 마우스가 canvas위에서 움직이는 상황
   mousemove(event) {
+    if (!this.isMouse) {
+      // 마우스 이벤트가 비활성화 중인 경우
+      return
+    }
+
     // 다음 블록을 마우스 위치로 이동시킨다.
     this.nextBlock.move(event.offsetX, event.offsetY)
   }
 
   // 마우스이벤트 3: 마우스를 누른상태에서 손가락을 땐 상황
   mouseup(event) {
+    if (!this.isMouse) {
+      // 마우스 이벤트가 비활성화 중인 경우
+      return
+    }
+
     // 마우스 이벤트 비활성화
     this.isMouse = false
+
+    // 블록이 게임보드위에 다른 블록과 겹치는지 확인
+    if (!this.checkBlock(this.nextBlock, this.shadowBlockX, this.shadowBlockY)) {
+      // 무시
+      return
+
+    } else {
+      // 블록을 게임보드위에 추가한다.
+      this.addBlock(this.nextBlock, this.shadowBlockX, this.shadowBlockY)
+
+      // 다음 블록을 선택한다
+      this.selectNextBlock()
+    }
   }
 }
 
@@ -402,7 +384,11 @@ class TetrisPuzzleGame {
 const init = () => {
   // game : 게임 인스턴스
   // canvas ID Game => #game
-  const game = new TetrisPuzzleGame('#game', 9, 9)
+  const game = new TetrisPuzzleGame('#game', 30, 30)
+  game.tileWidth = 15
+  game.tileHeight = 15
+
+  game.init()
   game.start()
 
   return game
